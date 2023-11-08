@@ -15,6 +15,8 @@ struct BTNode {
 
 
 // функции для binary search tree
+ 
+// вставка элемента (tested)
 void insertBTNode(BTNode* insnode, BTNode* root) {
     if (root == nullptr) {
         root = insnode;
@@ -22,7 +24,7 @@ void insertBTNode(BTNode* insnode, BTNode* root) {
     }
     BTNode* parent = root->parent;
     while (root != nullptr) {
-        if (root->key > insnode->key) {
+        if (insnode->key < root->key) {
             if (root->left_child == nullptr) {
                 insnode->parent = root;
                 root->left_child = insnode;
@@ -30,7 +32,7 @@ void insertBTNode(BTNode* insnode, BTNode* root) {
             }
             root = root->left_child;
         }
-        else if (root->key < insnode->key) {
+        else if (insnode->key > root->key) {
             if (root->right_child == nullptr) {
                 insnode->parent = root;
                 root->right_child = insnode;
@@ -47,45 +49,87 @@ void insertBTNode(BTNode* insnode, BTNode* root) {
     }
 }
 
-// поиск предыдущего
+// поиск предыдущего (tested)
 BTNode* findPredcessor(BTNode* node) {
-    return nullptr;
+    BTNode* predcessor = nullptr;
+    // 1 случай - предшественник находится ниже
+    if (node->left_child != nullptr) {
+        predcessor = node->left_child;
+        while (predcessor->right_child != nullptr) {
+            predcessor = predcessor->right_child;
+        }
+
+    } // 2 случай - предшественника нужно искать 
+    else {
+        if (node->parent != nullptr) {
+            predcessor = node->parent;
+            if (node == predcessor->left_child) {
+                if (predcessor->parent != nullptr) {
+                    if (predcessor == predcessor->parent->left_child) {
+                        while (predcessor->parent != nullptr && predcessor == predcessor->parent->left_child) predcessor = predcessor->parent;
+                        if (predcessor->parent != nullptr) predcessor = predcessor->parent;
+                        else predcessor = nullptr;
+                    }
+                    else if (predcessor == predcessor->parent->right_child) {
+                        predcessor = predcessor->parent;
+                    }
+                }
+                else {
+                    predcessor = nullptr;
+                }
+            }
+            else {
+                predcessor;
+            }
+        }
+    }
+    return predcessor;
 }
 
-// поиск следующего
+// поиск следующего (tested)
 BTNode* findSuccessor(BTNode* node) {
     BTNode* successor = nullptr;
     // 1 случай - потомок находится ниже
     // сюда же входит случай, если указанная нода - корневая -> не требуется дальнейшей проверки на наличие родителя на первом этапе
     if (node->right_child != nullptr) {
-        node = node->right_child;
-        while (node->left_child != nullptr) {
-            node = node->left_child;
+        successor = node->right_child;
+        while (successor->left_child != nullptr) {
+            successor = successor->left_child;
         }
-        successor = node;
+
     } // 2 случай - потомка нужно искать 
     else  {
-        if (node == node->parent->left_child) successor = node->parent;
-        else { // элемент является правым ребенком своего родителя
-            node = node->parent;
-            // два варианта - либо родитель родителя правый, либо левый. если левый, идем до упора, и крайний будет нашим элементом
-            // если правый, смотрим, но является ли он правым до самого конца. если да - последователя нет
-            if (node->parent != nullptr) {
-                if (node == node->parent->left_child) {
-                    while (node->parent != nullptr && node == node->parent->left_child) node = node->parent;
-                    successor = node;
+        if (node->parent != nullptr) {
+            successor = node->parent;
+            // 2 варианта для положения ноды: это правый ребенок родителя;
+            if (node == successor->right_child) {
+                if (successor->parent != nullptr) {
+                    // если сам родитель правый потомок
+                    if (successor == successor->parent->right_child) {
+                        while (successor->parent != nullptr && successor == successor->parent->right_child) successor = successor->parent;
+                        // проверяем не дошли ли до корня, если дошли - следующего нет
+                        if (successor->parent != nullptr) successor = successor->parent;
+                        else successor = nullptr;
+                    }
+                    // если сам родитель левый потомок
+                    else if (successor == successor->parent->left_child) {
+                        successor = successor->parent;
+                    }
                 }
                 else {
-                    while (node->parent != nullptr && node == node->parent->right_child) node = node->parent;
-                    // два варианта: либо родительский элемент текущей ноды пустой, либо это левый элемент.
-                    if (node->parent != nullptr && node->parent->left_child == node) successor = node->parent;
+                    successor = nullptr;
                 }
-            } // обработка случая, когда родитель у родителя не пустой не требуется - элемент самый правый, последователя нет
+            } 
+            // это левый ребенок родителя. 
+            else {
+                successor;
+            }
         }
     }
     return successor;
 }
 
+// поиск по ключу (tested)
 BTNode* searchByKey(int value, BTNode* root) {
     if (root == nullptr) {
         std::cout << "Дерево пусто.\n";
@@ -107,21 +151,78 @@ BTNode* searchByKey(int value, BTNode* root) {
     return root;
 }
 
-void deleteBTNode(BTNode* node, BTNode* root) {
+// удаление ноды из дерева
+void deleteBTNode(BTNode* node) {
     // проверка на всевозможные исключения
-    if (root == nullptr) {
-        std::cout << "Корня дерева не существует.\n";
-        return;
-    }
     if (node == nullptr) {
         std::cout << "Переданный элемент не существует.\n";
         return;
     }
-    if (node == root) {
+    if (node->parent == nullptr && node->left_child == nullptr && node->right_child == nullptr) {
         std::cout << "Дерево очищено полностью.\n";
+        delete node;
         return;
     }
 
+    bool isLeft, isLeftChild;
+
+    // разбиение на варианты - два дочерних узла, один, нет вовсе
+    // листовой узел
+    if (node->parent != nullptr && node->left_child == nullptr && node->right_child == nullptr) {
+        isLeftChild = (node->parent->left_child != nullptr);
+        
+        if (isLeftChild) node->parent->left_child = nullptr;
+        else node->parent->right_child = nullptr;
+        
+        delete node;
+
+    }
+    // имеет только 1 дочерний узел
+    else if (node->left_child == nullptr || node->right_child == nullptr) {
+        // нужно понять, удаляемый узел левый или правый
+        if (node->parent != nullptr) {
+            isLeft = (node->parent->left_child == node);
+            isLeftChild = (node->left_child != nullptr);
+            BTNode* nodeParent = node->parent;
+            if (isLeft) {
+                if (isLeftChild) { 
+                    nodeParent->left_child = node->left_child; 
+                    node->left_child->parent = nodeParent;
+                }
+                else {
+                    nodeParent->left_child = node->right_child;
+                    node->right_child->parent = nodeParent;
+                }
+                
+            }
+            else {
+                if (isLeftChild) {
+                    nodeParent->right_child = node->left_child;
+                    node->left_child->parent = nodeParent;
+                }
+                else {
+                    nodeParent->right_child = node->right_child;
+                    node->right_child->parent = nodeParent;
+                }
+                
+            }
+        }
+        else {
+            isLeftChild = (node->left_child != nullptr);
+            if (isLeftChild) node->left_child->parent = nullptr;
+            else node->right_child = nullptr;
+        }
+        delete node;
+    }
+    // имеет 2 дочерних узла
+    else {
+        BTNode* toReplace = findSuccessor(node);
+        int temp = toReplace->key;
+        toReplace->key = node->key;
+        node->key = temp;
+
+        deleteBTNode(toReplace);
+    }
 }
 
 void printBT(const std::string& prefix, BTNode* node, bool isLeft)
@@ -136,6 +237,7 @@ void printBT(const std::string& prefix, BTNode* node, bool isLeft)
         std::cout << node->key << std::endl;
 
         // enter the next tree level - left and right branch
+
         printBT(prefix + (isLeft ? "|   " : "   "), node->left_child, true);
         printBT(prefix + (isLeft ? "|   " : "   "), node->right_child, false);
     }
@@ -159,13 +261,14 @@ int main()
     }
     printBT("", cursor, false);
     int valueToFind = 0;
-    std::cin >> valueToFind;
-    BTNode* found = searchByKey(valueToFind, bst);
-    bst = cursor;
-    if (found!= nullptr) {
-        std::cout << "founded\n";
-        BTNode* successor = findSuccessor(found);
-        if (successor != nullptr) std::cout << successor->key << std::endl;
-        else std::cout << "not found\n";
+    while (true) {
+        std::cin >> valueToFind;
+        BTNode* found = searchByKey(valueToFind, bst);
+        bst = cursor;
+        if (found != nullptr) {
+            std::cout << "founded\n";
+            deleteBTNode(found);
+            printBT("", cursor, false);
+        }
     }
 }
