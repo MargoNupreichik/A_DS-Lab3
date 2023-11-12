@@ -27,7 +27,7 @@ BTNode* findMin(BTNode* node) {
 
 BTNode* findMax(BTNode* node) {
 	BTNode* maximum = node;
-	while (maximum->left_child != nullptr) maximum = maximum->left_child;
+	while (maximum->right_child != nullptr) maximum = maximum->right_child;
 	return maximum;
 }
 
@@ -263,6 +263,79 @@ void BTbigRightRotation(BTNode* node, BTTree* tree) {
 	BTrightRotation(node, tree);
 }
 
+// обходы по дереву:
+
+int getLevel(int nodekey, BTNode* root) {
+	int level = 0;
+	
+	while (root != nullptr) {
+		if (root->key == nodekey) return level;
+
+		if (root->key < nodekey) {
+			root = root->right_child;
+		}
+		else root = root->left_child;
+		
+		level++;
+	}
+}
+
+
+// в ширину
+int BTheight(BTNode* node) {
+	if (node == nullptr) return 0;
+	else {
+		int lefth = BTheight(node->left_child);
+		int righth = BTheight(node->right_child);
+
+		if (lefth > righth) return (lefth + 1);
+		else return (righth + 1);
+	}
+}
+
+void BTprintLevel(BTNode* root, int level) {
+	if (root == nullptr) return;
+	if (level == 1) std::cout << " " << root->key <<" ";
+	else if (level > 1) {
+		BTprintLevel(root->left_child, level - 1);
+		BTprintLevel(root->right_child, level - 1);
+	}
+}
+
+void roundaboutWidth(BTNode* root) {
+	int h = BTheight(root);
+
+	int i;
+	for (int i = 0; i <= h; i++) {
+		BTprintLevel(root, i);
+	}
+}
+
+// в глубину:
+void depthPreorder(BTNode* root) {
+	if (root != nullptr) {
+		std::cout << " | " << root->key;
+		depthPreorder(root->left_child);
+		depthPreorder(root->right_child);
+	}
+}
+
+void depthPostorder(BTNode* root) {
+	if (root != nullptr) {
+		depthPostorder(root->left_child);
+		depthPostorder(root->right_child);
+		std::cout << " | " << root->key;
+	}
+}
+
+void depthInorder(BTNode* root) {
+	if (root != nullptr) {
+		depthInorder(root->left_child);
+		std::cout << " | " << root->key;
+		depthInorder(root->right_child);
+	}
+}
+
 void printBT(const std::string& prefix, BTNode* node, bool isLeft)
 {
 	if (node != nullptr)
@@ -296,17 +369,8 @@ int main()
 		insertBTNode(toInsert, BST);
 	}
 	printBT("", BST->root, false);
-	int valueToFind = 0;
-	while (true) {
-		std::cin >> valueToFind;
-		std::cout << "founded\n";
-		BTNode* newRotated = searchByKey(valueToFind, BST);
-		if (newRotated != nullptr) {
-			BTbigLeftRotation(newRotated, BST);
-			if (BST->root != nullptr) {
-				printBT("", BST->root, false);
-			}
-			else break;
-		}
-	}
+
+	BTNode* rootcopy = BST->root;
+
+	roundaboutWidth(rootcopy);
 }
